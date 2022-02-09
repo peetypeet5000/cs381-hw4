@@ -1,15 +1,18 @@
-module Stacklang1 where
+-- Homework 4 - Stacklang2
+-- Name: Peter LaMontagne
+-- Course: CS381
+-- Date: 2/8/22
 
--- Grammar for the stacklang
---   S ∷=   C | C, S
---   C ∷= LD Int | ADD | MULT | DUP 
+module Stacklang2 where
 
 -- Data Type Definitions
 
 type Prog = [Cmd] 
 
+-- The stack supports Bools and Ints
 type Stack = [Either Bool Int]
 
+-- These are the commands supported
 data Cmd  = LDI Int 
   | LDB Bool 
   | LEQ 
@@ -19,31 +22,20 @@ data Cmd  = LDI Int
   | IFELSE Prog Prog 
   deriving Show
 
--- Program Constructors
 
 -- Semantic definition of how to run a program
 -- Run commands on a stack until no commands are left
 run :: Prog -> Stack -> Maybe Stack
-run ((LDI a):ps) s = run ps (a:s)
-run ((LDB a):ps) s = run ps (a:s)
-run ((ADD):ps) (x:y:xs) = run ps ((x + y):xs)
-run ((MULT):ps) (x:y:xs) = run ps ((x * y):xs)
-run ((DUP):ps) (x:xs) = run ps (x:x:xs)
-run ((LEQ):ps) (x:y:xs)
-  | (x <= y) = run ps ((Left True):xs)
+run ((LDI a):ps) s = run ps ((Right a):s) -- Append a on the stack
+run ((LDB a):ps) s = run ps ((Left a):s) -- Same as above, but a Left bool type
+run ((ADD):ps) ((Right x):(Right y):xs) = run ps ((Right (x + y)):xs) -- Add with INTs only
+run ((MULT):ps) ((Right x):(Right y):xs) = run ps ((Right (x * y)):xs) -- Mult with INTs only
+run ((DUP):ps) (x:xs) = run ps (x:x:xs) -- Dupe with either type, just con twice
+run ((LEQ):ps) (x:y:xs) -- Append a Left True/False depending on condition
+  | x <= y = run ps ((Left True):xs)
   | otherwise = run ps ((Left False):xs)
-run ((IFELSE prog1 prog2):ps) (x:xs)
-  | (x == True) = run prog1 xs
-  | otherwise = run prog2 xs
-run [] s = Just s
-run _ _ = Nothing
-
-
--- Sample Test Programs
-
-stack1 :: Stack
-stack1 = [Right 1, Right 3, Right 5, Right 7, Right 9]
-stack2 :: Stack
-stack2 = [Left True, Right 3] 
-test1 = [LDI 3, DUP, ADD, DUP, MULT]
-test2 = [LDB True, DUP, IFELSE [LDI 1][LDI 0]]
+run ((IFELSE prog1 prog2):ps) (Left x:xs) -- Append the program instructions, depending on condition
+  | x == True = run (prog1 ++ ps) xs
+  | otherwise = run (prog2 ++ ps) xs
+run [] s = Just s -- Once out of commands, return the stack
+run _ _ = Nothing -- If it does not pattern match, it is an invalid command
