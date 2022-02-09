@@ -16,7 +16,6 @@ data Cmd = LD Int
 
 type Stack = [Int] 
 
--- Program Constructors
 
 -- Semantic definition of how to run a program
 -- Run commands on a stack until no commands are left
